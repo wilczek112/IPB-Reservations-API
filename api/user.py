@@ -1,35 +1,37 @@
 from bson import ObjectId
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from pydantic import BaseModel
 from pymongo import MongoClient
 
 import settings
 
-app = FastAPI()
+router = APIRouter()  # Change app to router
 
 client = MongoClient(settings.mongo_uri)
 db = client["Space_reservation_database"]
-collection = db["User"]
+collection = db["Reservation"]  # Change collection to Reservation
 
-class userSchema(BaseModel):
-    name: str
-    surname: str
-    role: str
-    email: str
-    password: str
+class ReservationSchema(BaseModel):  # Change userSchema to ReservationSchema
+    StartTime: int
+    EndTime: int
+    RoomId: str
+    ProfessorId: str
+    Status: str
+    SchoolId: str
 
-def userEntity(item) -> dict:
+def reservationEntity(item) -> dict:  # Change userEntity to reservationEntity
     return {
         "id":str(item["_id"]),
-        "name":item["name"],
-        "surname":item["surname"],
-        "role": item["role"],
-        "email": item["email"],
-        "password": item["password"]
+        "StartTime":item["StartTime"],
+        "EndTime":item["EndTime"],
+        "RoomId":item["RoomId"],
+        "ProfessorId": item["ProfessorId"],
+        "Status": item["Status"],
+        "SchoolId": item["SchoolId"]
     }
 
-def usersEntity(entity) -> list:
-    return [userEntity(item) for item in entity]
+def reservationsEntity(entity) -> list:  # Change usersEntity to reservationsEntity
+    return [reservationEntity(item) for item in entity]  # Change userEntity to reservationEntity
 
 def serializeDict(a) -> dict:
     return {**{i:str(a[i]) for i in a if i=='_id'},**{i:a[i] for i in a if i!='_id'}}
@@ -37,29 +39,29 @@ def serializeDict(a) -> dict:
 def serializeList(entity) -> list:
     return [serializeDict(a) for a in entity]
 
-@app.get('/')
-async def find_all_users():
+@router.get('/')
+async def find_all_reservations():  # Change find_all_users to find_all_reservations
     return serializeList(collection.find())
 
-@app.post('/')
-async def create_user(user: userSchema):
-    collection.insert_one(dict(user))
+@router.post('/')
+async def create_reservation(reservation: ReservationSchema):  # Change create_user to create_reservation and user to reservation
+    collection.insert_one(dict(reservation))  # Change user to reservation
     return serializeList(collection.find())
 
-@app.get('/{id}')
-async def find_user(id):
+@router.get('/{id}')
+async def find_reservation(id):  # Change find_user to find_reservation
     return serializeList(collection.find({"_id":ObjectId(id)}))
 
-@app.put('/{id}')
-async def update_user(id, user: userSchema):
-    collection.find_one_and_update({"_id":ObjectId(id)}, {"$set":dict(user)})
+@router.put('/{id}')
+async def update_reservation(id, reservation: ReservationSchema):  # Change update_user to update_reservation and user to reservation
+    collection.find_one_and_update({"_id":ObjectId(id)}, {"$set":dict(reservation)})  # Change user to reservation
     return serializeList(collection.find({"_id":ObjectId(id)}))
 
-@app.delete('/{id}')
-async def delete_user(id: str):
-    user = collection.find_one({"_id": ObjectId(id)})
-    if user is not None:
+@router.delete('/{id}')
+async def delete_reservation(id: str):  # Change delete_user to delete_reservation
+    reservation = collection.find_one({"_id": ObjectId(id)})  # Change user to reservation
+    if reservation is not None:  # Change user to reservation
         collection.delete_one({"_id": ObjectId(id)})
         return {"status": 200, "message": "Successfully deleted"}
     else:
-        return {"status": 404, "message": "User not found"}
+        return {"status": 404, "message": "Reservation not found"}  # Change User not found to Reservation not found

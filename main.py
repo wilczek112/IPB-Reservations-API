@@ -1,7 +1,6 @@
-# main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import reservation, room, equipment, user
+from api import room, equipment, user, reservation  # Import reservation
 
 app = FastAPI()
 
@@ -15,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/reservation", reservation.app)
-app.mount("/room", room.app)
-app.mount("/equipment", equipment.app)
-app.mount("/user", user.app)
+app.include_router(reservation.router, prefix="/reservation")  # Include reservation router
+app.include_router(room.router, prefix="/room")
+app.include_router(equipment.router, prefix="/equipment")
+app.include_router(user.router, prefix="/user")

@@ -1,29 +1,37 @@
 from bson import ObjectId
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from pydantic import BaseModel
 from pymongo import MongoClient
 
 import settings
 
-app = FastAPI()
+router = APIRouter()  # Change app to router
 
 client = MongoClient(settings.mongo_uri)
 db = client["Space_reservation_database"]
-collection = db["Equipment"]
+collection = db["Reservation"]  # Change collection to Reservation
 
-class equipmentSchema(BaseModel):
-    name: str
-    iconId: str
+class ReservationSchema(BaseModel):  # Change equipmentSchema to ReservationSchema
+    StartTime: int
+    EndTime: int
+    RoomId: str
+    ProfessorId: str
+    Status: str
+    SchoolId: str
 
-def equipmentEntity(item) -> dict:
+def reservationEntity(item) -> dict:  # Change equipmentEntity to reservationEntity
     return {
         "id":str(item["_id"]),
-        "name":item["name"],
-        "iconId":item["iconId"]
+        "StartTime":item["StartTime"],
+        "EndTime":item["EndTime"],
+        "RoomId":item["RoomId"],
+        "ProfessorId": item["ProfessorId"],
+        "Status": item["Status"],
+        "SchoolId": item["SchoolId"]
     }
 
-def equipmentsEntity(entity) -> list:
-    return [equipmentEntity(item) for item in entity]
+def reservationsEntity(entity) -> list:  # Change equipmentsEntity to reservationsEntity
+    return [reservationEntity(item) for item in entity]  # Change equipmentEntity to reservationEntity
 
 def serializeDict(a) -> dict:
     return {**{i:str(a[i]) for i in a if i=='_id'},**{i:a[i] for i in a if i!='_id'}}
@@ -31,29 +39,29 @@ def serializeDict(a) -> dict:
 def serializeList(entity) -> list:
     return [serializeDict(a) for a in entity]
 
-@app.get('/')
-async def find_all_equipments():
+@router.get('/')
+async def find_all_reservations():  # Change find_all_equipments to find_all_reservations
     return serializeList(collection.find())
 
-@app.post('/')
-async def create_equipment(equipment: equipmentSchema):
-    collection.insert_one(dict(equipment))
+@router.post('/')
+async def create_reservation(reservation: ReservationSchema):  # Change create_equipment to create_reservation and equipment to reservation
+    collection.insert_one(dict(reservation))  # Change equipment to reservation
     return serializeList(collection.find())
 
-@app.get('/{id}')
-async def find_equipment(id):
+@router.get('/{id}')
+async def find_reservation(id):  # Change find_equipment to find_reservation
     return serializeList(collection.find({"_id":ObjectId(id)}))
 
-@app.put('/{id}')
-async def update_equipment(id, equipment: equipmentSchema):
-    collection.find_one_and_update({"_id":ObjectId(id)}, {"$set":dict(equipment)})
+@router.put('/{id}')
+async def update_reservation(id, reservation: ReservationSchema):  # Change update_equipment to update_reservation and equipment to reservation
+    collection.find_one_and_update({"_id":ObjectId(id)}, {"$set":dict(reservation)})  # Change equipment to reservation
     return serializeList(collection.find({"_id":ObjectId(id)}))
 
-@app.delete('/{id}')
-async def delete_equipment(id: str):
-    equipment = collection.find_one({"_id": ObjectId(id)})
-    if equipment is not None:
+@router.delete('/{id}')
+async def delete_reservation(id: str):  # Change delete_equipment to delete_reservation
+    reservation = collection.find_one({"_id": ObjectId(id)})  # Change equipment to reservation
+    if reservation is not None:  # Change equipment to reservation
         collection.delete_one({"_id": ObjectId(id)})
         return {"status": 200, "message": "Successfully deleted"}
     else:
-        return {"status": 404, "message": "Equipment not found"}
+        return {"status": 404, "message": "Reservation not found"}  # Change Equipment not found to Reservation not found
