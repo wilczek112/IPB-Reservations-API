@@ -57,6 +57,11 @@ async def update_reservation(id, reservation: ReservationSchema):  # Change upda
     collection.find_one_and_update({"_id":ObjectId(id)}, {"$set":dict(reservation)})  # Change room to reservation
     return serializeList(collection.find({"_id":ObjectId(id)}))
 
+@router.patch('/{id}')  # New PATCH route
+async def cancel_reservation(id: str):
+    collection.find_one_and_update({"_id":ObjectId(id)}, {"$set": {"Status": "Cancelled"}})
+    return serializeList(collection.find({"_id":ObjectId(id)}))
+
 @router.delete('/{id}')
 async def delete_reservation(id: str):  # Change delete_room to delete_reservation
     reservation = collection.find_one({"_id": ObjectId(id)})  # Change room to reservation
