@@ -19,7 +19,19 @@ class ReservationSchema(BaseModel):
     ProfessorId: str
     Status: str
     SchoolId: str
+def reservationEntity(item) -> dict:
+    return {
+        "id":str(item["_id"]),
+        "StartTime":item["StartTime"],
+        "EndTime":item["EndTime"],
+        "RoomId":item["RoomId"],
+        "ProfessorId": item["ProfessorId"],
+        "Status": item["Status"],
+        "SchoolId": item["SchoolId"]
+    }
 
+def reservationsEntity(entity) -> list:
+    return [reservationEntity(item) for item in entity]
 @router.get('/')
 async def find_all_reservations():
     reservations = list(collection.find())
