@@ -1,4 +1,4 @@
-# MongoDB attributes
+#Settings for mongo
 user="test_user"
 password="Test_user123"
 

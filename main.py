@@ -5,7 +5,6 @@ from api import room, equipment, user, reservation  # Import reservation
 app = FastAPI()
 
 origins = ["*"]
-# Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -14,7 +13,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(reservation.router, prefix="/reservation")  # Include reservation router
+app.include_router(reservation.router, prefix="/reservation")
 app.include_router(room.router, prefix="/room")
 app.include_router(equipment.router, prefix="/equipment")
 app.include_router(user.router, prefix="/user")

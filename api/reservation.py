@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from pymongo import MongoClient
 from bson import ObjectId
+from api_IPB import getSumarios
 
 import settings
 
@@ -57,3 +58,23 @@ async def delete_reservation(id: str):
         return {"success": True}
     else:
         return {"error": "Reservation not found"}
+
+@router.get('/update/{codEscola}/{codSala}')
+async def fetch_reservations_and_save_to_db(codEscola: int, codSala: str):
+    try:
+        reservations = getSumarios.get_reservations(codEscola, codSala)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    for reservation in reservations:
+        new_reservation = {
+            "StartTime": reservation["inicio"],
+            "EndTime": reservation["fim"],
+            "RoomId": reservation["sala"]["codSala"],
+            "ProfessorId": reservation["docentes"][0]["login"] if reservation["docentes"] else None,
+            "Status": "Active" if reservation["aula"]["activo"] else "Inactive",
+            "SchoolId": reservation["sala"]["codEscola"]
+        }
+        collection.insert_one(new_reservation)
+
+    return {"status": 200, "message": "Data fetched from API and saved to database successfully"}

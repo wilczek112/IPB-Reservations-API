@@ -1,37 +1,35 @@
 from bson import ObjectId
-from fastapi import FastAPI, APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from pymongo import MongoClient
-
+from api_IPB import getSalas
 import settings
 
-router = APIRouter()  # Change app to router
+router = APIRouter()
 
 client = MongoClient(settings.mongo_uri)
 db = client["Space_reservation_database"]
-collection = db["Reservation"]  # Change collection to Reservation
+collection = db["Room"]
 
-class ReservationSchema(BaseModel):  # Change roomSchema to ReservationSchema
-    StartTime: int
-    EndTime: int
-    RoomId: str
-    ProfessorId: str
-    Status: str
+class RoomSchema(BaseModel):
+    Room: str
+    Type: str
     SchoolId: str
+    Capacity: str
+    EquipmentList: list
 
-def reservationEntity(item) -> dict:  # Change roomEntity to reservationEntity
+def roomEntity(item) -> dict:
     return {
         "id":str(item["_id"]),
-        "StartTime":item["StartTime"],
-        "EndTime":item["EndTime"],
-        "RoomId":item["RoomId"],
-        "ProfessorId": item["ProfessorId"],
-        "Status": item["Status"],
-        "SchoolId": item["SchoolId"]
+        "Room":item["Room"],
+        "Type":item["Type"],
+        "SchoolId":item["SchoolId"],
+        "Capacity": item["Capacity"],
+        "EquipmentList": item["EquipmentList"]
     }
 
-def reservationsEntity(entity) -> list:  # Change roomsEntity to reservationsEntity
-    return [reservationEntity(item) for item in entity]  # Change roomEntity to reservationEntity
+def roomsEntity(entity) -> list:
+    return [roomEntity(item) for item in entity]
 
 def serializeDict(a) -> dict:
     return {**{i:str(a[i]) for i in a if i=='_id'},**{i:a[i] for i in a if i!='_id'}}
@@ -40,33 +38,52 @@ def serializeList(entity) -> list:
     return [serializeDict(a) for a in entity]
 
 @router.get('/')
-async def find_all_reservations():  # Change find_all_rooms to find_all_reservations
+async def find_all_rooms():
     return serializeList(collection.find())
 
 @router.post('/')
-async def create_reservation(reservation: ReservationSchema):  # Change create_room to create_reservation and room to reservation
-    collection.insert_one(dict(reservation))  # Change room to reservation
+async def create_room(room: RoomSchema):
+    collection.insert_one(dict(room))
     return serializeList(collection.find())
 
 @router.get('/{id}')
-async def find_reservation(id):  # Change find_room to find_reservation
+async def find_room(id):
     return serializeList(collection.find({"_id":ObjectId(id)}))
 
 @router.put('/{id}')
-async def update_reservation(id, reservation: ReservationSchema):  # Change update_room to update_reservation and room to reservation
-    collection.find_one_and_update({"_id":ObjectId(id)}, {"$set":dict(reservation)})  # Change room to reservation
+async def update_room(id, room: RoomSchema):
+    collection.find_one_and_update({"_id":ObjectId(id)}, {"$set":dict(room)})
     return serializeList(collection.find({"_id":ObjectId(id)}))
 
-@router.patch('/{id}')  # New PATCH route
-async def cancel_reservation(id: str):
+@router.patch('/{id}')
+async def cancel_room(id: str):
     collection.find_one_and_update({"_id":ObjectId(id)}, {"$set": {"Status": "Cancelled"}})
     return serializeList(collection.find({"_id":ObjectId(id)}))
 
 @router.delete('/{id}')
-async def delete_reservation(id: str):  # Change delete_room to delete_reservation
-    reservation = collection.find_one({"_id": ObjectId(id)})  # Change room to reservation
-    if reservation is not None:  # Change room to reservation
+async def delete_room(id: str):
+    room = collection.find_one({"_id": ObjectId(id)})
+    if room is not None:
         collection.delete_one({"_id": ObjectId(id)})
         return {"status": 200, "message": "Successfully deleted"}
     else:
-        return {"status": 404, "message": "Reservation not found"}  # Change Room not found to Reservation not found
+        return {"status": 404, "message": "Room not found"}
+
+@router.get('/update/{codEscola}')
+async def fetch_salas(codEscola: int):
+    try:
+        salas = getSalas.get_salas(codEscola)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    for sala in salas:
+        room = {
+            "Room": sala["codSala"],
+            "Type": "Unknown",
+            "SchoolId": sala["codEscola"],
+            "Capacity": "Unknown",
+            "EquipmentList": []
+        }
+        collection.insert_one(room)
+
+    return {"status": 200, "message": "Data fetched from API and saved to database successfully"}
