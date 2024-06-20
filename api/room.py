@@ -1,3 +1,4 @@
+from typing import List
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -17,6 +18,9 @@ class RoomSchema(BaseModel):
     SchoolId: str
     Capacity: str
     EquipmentList: list
+
+class RoomList(BaseModel):
+    rooms: List[RoomSchema]
 
 def roomEntity(item) -> dict:
     return {
@@ -43,8 +47,23 @@ async def find_all_rooms():
 
 @router.post('/')
 async def create_room(room: RoomSchema):
-    collection.insert_one(dict(room))
-    return serializeList(collection.find())
+    room = dict(room)
+    existing_room = collection.find_one({"Room": room["Room"]})
+    if existing_room is not None:
+        raise HTTPException(status_code=400, detail="Room already exists")
+    result = collection.insert_one(room)
+    return {"_id": str(result.inserted_id)}
+
+@router.post('/multiple/')
+async def create_rooms(room_list: RoomList):
+    count = 0
+    for room in room_list.rooms:
+        existing_room = collection.find_one({"Room": room.Room})
+        if existing_room is None:
+            collection.insert_one(dict(room))
+            count += 1
+    return {"status": 200, "message": f"Successfully created {count} rooms"}
+
 
 @router.get('/{id}')
 async def find_room(id):
@@ -59,6 +78,14 @@ async def update_room(id, room: RoomSchema):
 async def cancel_room(id: str):
     collection.find_one_and_update({"_id":ObjectId(id)}, {"$set": {"Status": "Cancelled"}})
     return serializeList(collection.find({"_id":ObjectId(id)}))
+
+@router.delete('/purge')
+async def purge_all():
+    result = collection.delete_many({})
+    if result.deleted_count > 0:
+        return {"status": 200, "message": f"Successfully deleted {result.deleted_count} documents"}
+    else:
+        return {"status": 404, "message": "No documents found to delete"}
 
 @router.delete('/{id}')
 async def delete_room(id: str):

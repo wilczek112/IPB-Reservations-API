@@ -54,6 +54,14 @@ async def find_reservation(id: str):
     else:
         return {"error": "Reservation not found"}
 
+@router.get('/professor/{professor_id}')
+async def find_reservations_by_professor(professor_id: str):
+    reservations = list(collection.find({"ProfessorId": professor_id}))
+    for reservation in reservations:
+        reservation["_id"] = str(reservation["_id"])
+    return reservations
+
+
 @router.put('/{id}')
 async def update_reservation(id: str, reservation: ReservationSchema):
     reservation = dict(reservation)
@@ -63,6 +71,14 @@ async def update_reservation(id: str, reservation: ReservationSchema):
     else:
         return {"error": "Reservation not found"}
 
+@router.delete('/purge')
+async def purge_all_reservations():
+    result = collection.delete_many({})
+    if result.deleted_count > 0:
+        return {"status": 200, "message": f"Successfully deleted {result.deleted_count} reservations"}
+    else:
+        return {"status": 404, "message": "No reservations found to delete"}
+
 @router.delete('/{id}')
 async def delete_reservation(id: str):
     result = collection.delete_one({"_id": ObjectId(id)})
@@ -70,6 +86,39 @@ async def delete_reservation(id: str):
         return {"success": True}
     else:
         return {"error": "Reservation not found"}
+
+@router.patch('/approve/{id}')
+async def approve_reservation(id: str):
+    result = collection.find_one_and_update(
+        {"_id": ObjectId(id)},
+        {"$set": {"Status": "Approved"}}
+    )
+    if result:
+        return reservationEntity(result)
+    else:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+
+@router.patch('/pause/{id}')
+async def stop_reservation(id: str):
+    result = collection.find_one_and_update(
+        {"_id": ObjectId(id)},
+        {"$set": {"Status": "Pending"}}
+    )
+    if result:
+        return reservationEntity(result)
+    else:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+
+@router.patch('/cancel/{id}')
+async def cancel_reservation(id: str):
+    result = collection.find_one_and_update(
+        {"_id": ObjectId(id)},
+        {"$set": {"Status": "Cancelled"}}
+    )
+    if result:
+        return reservationEntity(result)
+    else:
+        raise HTTPException(status_code=404, detail="Reservation not found")
 
 @router.get('/update/{codEscola}/{codSala}')
 async def fetch_reservations_and_save_to_db(codEscola: int, codSala: str):
