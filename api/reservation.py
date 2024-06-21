@@ -98,7 +98,7 @@ async def approve_reservation(id: str):
     else:
         raise HTTPException(status_code=404, detail="Reservation not found")
 
-@router.patch('/pause/{id}')
+@router.patch('/pending/{id}')
 async def stop_reservation(id: str):
     result = collection.find_one_and_update(
         {"_id": ObjectId(id)},
