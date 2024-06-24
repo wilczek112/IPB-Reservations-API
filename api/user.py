@@ -17,7 +17,7 @@ collection = db["User"]
 
 SECRET_KEY = "J****PIS*BoToK****takjestHeHe"  # Replace with your secret key
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 class UserSchema(BaseModel):
     name: str
