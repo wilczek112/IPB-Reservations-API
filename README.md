@@ -19,7 +19,7 @@ To display API endpoints you simply have to use this url: http://localhost:8000/
 
 As first step you need to download docker.
 
-API is prepaired for docker usage. To achieve this you simply have to download source code and run script "run docker.bat".
+API is prepaired for docker usage. To achieve this you simply have to download latest release and run script "run docker.bat".
 
 If you are linux user you simply need to run command being in project folder "docker-compose up --build"
 
